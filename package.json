@@ -1,0 +1,28 @@
+{
+  "name": "irys-simple-uploader",
+  "version": "1.0.0",
+  "description": "Un ejemplo simplificado para subir imágenes y metadatos JSON a Irys utilizando Solana",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node dist/index.js",
+    "balance": "tsc && node dist/check-balance.js",
+    "submit-tx": "tsc && node dist/submit-tx.js",
+    "withdraw": "tsc && node dist/withdraw.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@irys/upload": "^0.0.15",
+    "@irys/upload-solana": "^0.1.8",
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^6.0.0",
+    "dotenv": "^17.4.2"
+  }
+}
