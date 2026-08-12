@@ -1,7 +1,7 @@
 {
   "name": "irys-simple-uploader",
   "version": "1.0.0",
-  "description": "Un ejemplo simplificado para subir imágenes y metadatos JSON a Irys utilizando Solana",
+  "description": "A simplified example for uploading images and JSON metadata to Irys using Solana",
   "license": "ISC",
   "author": "",
   "type": "commonjs",

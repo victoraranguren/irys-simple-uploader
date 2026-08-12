@@ -10,7 +10,7 @@ dotenv.config();
 function loadPrivateKey(): Uint8Array {
     let privateKeyStr = (process.env.PRIVATE_KEY || "").trim();
     if (!privateKeyStr) {
-        throw new Error("La variable de entorno PRIVATE_KEY no está configurada.");
+        throw new Error("PRIVATE_KEY environment variable is not configured.");
     }
 
     if (fs.existsSync(privateKeyStr)) {
@@ -31,23 +31,23 @@ function loadPrivateKey(): Uint8Array {
     try {
         return bs58.decode(privateKeyStr);
     } catch (e) {
-        throw new Error(`Error al decodificar PRIVATE_KEY: ${(e as Error).message}`);
+        throw new Error(`Failed to decode PRIVATE_KEY: ${(e as Error).message}`);
     }
 }
 
 const main = async () => {
-    // Uso: npm run withdraw <monto_en_sol | "all"> [devnet | mainnet]
+    // Usage: npm run withdraw <amount_in_sol | "all"> [devnet | mainnet]
     const amountArg = process.argv[2];
     const networkArg = process.argv[3] || "devnet";
 
     if (!amountArg) {
         console.log("=========================================");
-        console.log("Uso:");
-        console.log("  npm run withdraw <monto_en_sol | all> [devnet | mainnet]");
-        console.log("\nEjemplos:");
-        console.log("  npm run withdraw 0.01          -> Retira 0.01 SOL en Devnet");
-        console.log("  npm run withdraw all           -> Retira todo el saldo disponible en Devnet");
-        console.log("  npm run withdraw all mainnet   -> Retira todo el saldo disponible en Mainnet");
+        console.log("Usage:");
+        console.log("  npm run withdraw <amount_in_sol | all> [devnet | mainnet]");
+        console.log("\nExamples:");
+        console.log("  npm run withdraw 0.01          -> Withdraws 0.01 SOL on Devnet");
+        console.log("  npm run withdraw all           -> Withdraws all available balance on Devnet");
+        console.log("  npm run withdraw all mainnet   -> Withdraws all available balance on Mainnet");
         console.log("=========================================");
         process.exit(1);
     }
@@ -60,8 +60,8 @@ const main = async () => {
     const address = keypair.publicKey.toBase58();
 
     console.log("=========================================");
-    console.log(`Wallet Solana: ${address}`);
-    console.log(`Red seleccionada: Irys ${network.toUpperCase()}`);
+    console.log(`Solana Wallet: ${address}`);
+    console.log(`Selected Network: Irys ${network.toUpperCase()}`);
     console.log("=========================================");
 
     const rpcUrl = isMainnet
@@ -69,7 +69,7 @@ const main = async () => {
         : process.env.SOLANA_DEVNET_RPC || clusterApiUrl("devnet");
 
     try {
-        // Inicializar el cargador (Uploader) de Irys
+        // Initialize the Irys Uploader
         let uploader;
         if (isMainnet) {
             uploader = await Uploader(Solana)
@@ -82,46 +82,46 @@ const main = async () => {
                 .withRpc(rpcUrl);
         }
 
-        // 1. Consultar balance actual cargado en Irys
+        // 1. Query current balance loaded on Irys
         const irysBalance = await uploader.getBalance(address);
         const irysBalanceInSol = uploader.utils.fromAtomic(irysBalance);
-        console.log(`Balance actual en Irys: ${irysBalanceInSol.toFixed(9)} SOL (${irysBalance.toString()} unidades atómicas)`);
+        console.log(`Current Irys balance: ${irysBalanceInSol.toFixed(9)} SOL (${irysBalance.toString()} atomic units)`);
 
         if (irysBalance.isZero()) {
-            console.log("No tienes saldo disponible para retirar en Irys.");
+            console.log("You have no available balance to withdraw on Irys.");
             process.exit(0);
         }
 
         let withdrawAmountAtomic;
 
         if (amountArg.toLowerCase() === "all") {
-            // Dejamos un margen pequeño para comisiones de transacción de Solana si aplica
+            // Leave a small margin for Solana transaction fees if applicable
             const SOLANA_FEE_ATOMIC = 5000;
             if (irysBalance.lte(SOLANA_FEE_ATOMIC)) {
-                console.error(`Error: El saldo disponible (${irysBalanceInSol.toFixed(9)} SOL) es menor o igual a la tarifa de comisión (0.000005 SOL).`);
+                console.error(`Error: Available balance (${irysBalanceInSol.toFixed(9)} SOL) is less than or equal to the transaction fee (0.000005 SOL).`);
                 process.exit(1);
             }
             withdrawAmountAtomic = irysBalance.minus(SOLANA_FEE_ATOMIC);
             const withdrawAmountSol = uploader.utils.fromAtomic(withdrawAmountAtomic);
-            console.log(`Retirando todo el saldo disponible (restando 0.000005 SOL de comisión): ${withdrawAmountSol.toFixed(9)} SOL...`);
+            console.log(`Withdrawing all available balance (subtracting 0.000005 SOL fee): ${withdrawAmountSol.toFixed(9)} SOL...`);
         } else {
             const amountInSol = parseFloat(amountArg);
             if (isNaN(amountInSol) || amountInSol <= 0) {
-                console.error("Error: Monto de retiro no válido. Debe ser un número positivo o 'all'.");
+                console.error("Error: Invalid withdrawal amount. Must be a positive number or 'all'.");
                 process.exit(1);
             }
             withdrawAmountAtomic = uploader.utils.toAtomic(amountInSol);
             const amountFormatted = uploader.utils.fromAtomic(withdrawAmountAtomic);
 
             if (withdrawAmountAtomic.gt(irysBalance)) {
-                console.error(`Error: El saldo disponible (${irysBalanceInSol.toFixed(9)} SOL) es menor que el monto solicitado (${amountFormatted.toFixed(9)} SOL).`);
+                console.error(`Error: Available balance (${irysBalanceInSol.toFixed(9)} SOL) is less than the requested amount (${amountFormatted.toFixed(9)} SOL).`);
                 process.exit(1);
             }
-            console.log(`Retirando: ${amountFormatted.toFixed(9)} SOL...`);
+            console.log(`Withdrawing: ${amountFormatted.toFixed(9)} SOL...`);
         }
 
-        // 2. Ejecutar el retiro
-        console.log("Enviando solicitud de retiro a Irys...");
+        // 2. Execute withdrawal
+        console.log("Sending withdrawal request to Irys...");
         
         let response;
         const uploaderAny = uploader as any;
@@ -130,24 +130,25 @@ const main = async () => {
         } else if (typeof uploaderAny.withdraw === "function") {
             response = await uploaderAny.withdraw(withdrawAmountAtomic);
         } else {
-            throw new Error("No se encontró el método de retiro en la versión actual del SDK.");
+            throw new Error("Withdrawal method not found in the current SDK version.");
         }
 
         console.log("\n=========================================");
-        console.log("¡Retiro exitoso!");
-        console.log("Detalles del retiro:");
+        console.log("Withdrawal successful!");
+        console.log("Withdrawal details:");
         console.log(JSON.stringify(response, null, 2));
         console.log("=========================================");
 
-        // 3. Consultar nuevo balance
+        // 3. Query new balance
         const newBalance = await uploader.getBalance(address);
-        console.log(`Nuevo balance disponible en Irys: ${uploader.utils.fromAtomic(newBalance).toFixed(9)} SOL`);
+        console.log(`New available balance in Irys: ${uploader.utils.fromAtomic(newBalance).toFixed(9)} SOL`);
 
     } catch (e: any) {
-        console.error("\n❌ Error durante el retiro:");
+        console.error("\n❌ Error during withdrawal:");
         console.error(e.message || e);
     }
     console.log("=========================================");
 };
 
 main();
+

@@ -8,7 +8,7 @@ import bs58 from "bs58";
 dotenv.config();
 
 /**
- * Carga la llave privada desde las variables de entorno o un archivo local.
+ * Loads the private key from environment variables or a local file.
  */
 function loadPrivateKey(): Uint8Array {
     let privateKeyStr = (process.env.PRIVATE_KEY || "").trim();
@@ -42,13 +42,13 @@ const secretKey = loadPrivateKey();
 const keypair = Keypair.fromSecretKey(secretKey);
 
 /**
- * Inicializa y retorna una instancia del Uploader de Irys para Solana
+ * Initializes and returns an instance of the Irys Uploader for Solana.
  * @param network 'devnet' | 'mainnet'
  */
 export async function getIrysUploader(network: "devnet" | "mainnet") {
     const isMainnet = network === "mainnet";
 
-    // Obtener RPC personalizado si existe, de lo contrario usar RPC por defecto
+    // Get custom RPC if configured, otherwise use default RPC
     const providerUrl = isMainnet
         ? process.env.SOLANA_MAINNET_RPC || "https://api.mainnet-beta.solana.com"
         : process.env.SOLANA_DEVNET_RPC || clusterApiUrl("devnet");
@@ -65,37 +65,37 @@ export async function getIrysUploader(network: "devnet" | "mainnet") {
             .withRpc(providerUrl);
     }
 
-    console.log(`📡 Conectado exitosamente a Irys ${network.toUpperCase()}`);
-    console.log(`💳 Wallet vinculada: ${keypair.publicKey.toBase58()}`);
+    console.log(`📡 Successfully connected to Irys ${network.toUpperCase()}`);
+    console.log(`💳 Linked wallet: ${keypair.publicKey.toBase58()}`);
 
     return uploader;
 }
 
 /**
- * Fondea la cuenta de Irys con una cantidad específica de SOL.
- * @param uploader Instancia del Uploader de Irys
- * @param amountInSol Cantidad de SOL a fondear (ej. 0.01)
+ * Funds the Irys account node with a specific amount of SOL.
+ * @param uploader Irys Uploader instance
+ * @param amountInSol Amount of SOL to fund (e.g. 0.01)
  */
 export async function fundIrys(uploader: any, amountInSol: number) {
     const fundAmount = uploader.utils.toAtomic(amountInSol);
-    console.log(`Fondeando el nodo de Irys con ${amountInSol} SOL...`);
+    console.log(`Funding Irys node with ${amountInSol} SOL...`);
     try {
         const fundTx = await uploader.fund(fundAmount);
-        console.log(`¡Fondeo exitoso! ID de Transacción: ${fundTx.id}`);
+        console.log(`Funding successful! Transaction ID: ${fundTx.id}`);
         return fundTx;
     } catch (e: any) {
-        console.error("Error durante el fondeo:", e.message || e);
+        console.error("Error during funding:", e.message || e);
         throw e;
     }
 }
 
 /**
- * Sube una imagen, genera un archivo metadata.json de ejemplo y lo sube a Irys.
+ * Uploads an image, generates an example metadata.json file, and uploads it to Irys.
  * @param network 'devnet' | 'mainnet'
  */
 export async function uploadAssets(network: "devnet" | "mainnet") {
     console.log("=========================================");
-    console.log(`🚀 Iniciando proceso de subida en Irys (${network.toUpperCase()})...`);
+    console.log(`🚀 Starting upload process on Irys (${network.toUpperCase()})...`);
     console.log("=========================================");
 
     const uploader = await getIrysUploader(network);
@@ -105,34 +105,34 @@ export async function uploadAssets(network: "devnet" | "mainnet") {
     const metadataPath = "./files/metadata.json";
 
     if (!fs.existsSync(imagePath)) {
-        throw new Error(`No se encontró la imagen en: ${imagePath}`);
+        throw new Error(`Image file not found at: ${imagePath}`);
     }
 
-    // Paso 1: Subir Imagen
-    console.log("\n[1/3] Subiendo archivo de Imagen...");
+    // Step 1: Upload Image
+    console.log("\n[1/3] Uploading Image file...");
     const imageTags = [{ name: "Content-Type", value: "image/jpeg" }];
     const imageReceipt = await uploader.uploadFile(imagePath, { tags: imageTags });
     const imageUrl = `https://gateway.irys.xyz/${imageReceipt.id}`;
-    console.log(`✅ Imagen subida con éxito: ${imageUrl}`);
+    console.log(`✅ Image uploaded successfully: ${imageUrl}`);
 
-    // Paso 2: Crear metadata.json de ejemplo usando la URL de la imagen
-    console.log("\n[2/3] Generando archivo metadata.json de ejemplo...");
+    // Step 2: Create example metadata.json using the uploaded image URL
+    console.log("\n[2/3] Generating example metadata.json file...");
     const metadataObj = {
-        name: "Colección Educativa Irys",
+        name: "Irys Educational Collection",
         symbol: "EDUIRYS",
-        description: "Este es un NFT de ejemplo creado para el contenido educativo de subidas con Irys y Solana.",
+        description: "This is an example NFT created for educational content on uploading with Irys and Solana.",
         image: imageUrl,
         attributes: [
             {
-                trait_type: "Clase",
-                value: "Desarrollo de Software"
+                trait_type: "Class",
+                value: "Software Development"
             },
             {
-                trait_type: "Plataforma",
+                trait_type: "Platform",
                 value: "Solana + Irys"
             },
             {
-                trait_type: "Educativo",
+                trait_type: "Educational",
                 value: "true"
             }
         ],
@@ -147,45 +147,45 @@ export async function uploadAssets(network: "devnet" | "mainnet") {
         }
     };
 
-    // Escribir localmente
+    // Save locally
     fs.writeFileSync(metadataPath, JSON.stringify(metadataObj, null, 2), "utf-8");
-    console.log(`✅ Archivo metadata.json guardado localmente en: ${metadataPath}`);
+    console.log(`✅ metadata.json file saved locally at: ${metadataPath}`);
 
-    // Paso 3: Subir metadata.json a Irys
-    console.log("\n[3/3] Subiendo archivo metadata.json a Irys...");
+    // Step 3: Upload metadata.json to Irys
+    console.log("\n[3/3] Uploading metadata.json file to Irys...");
     const metadataTags = [{ name: "Content-Type", value: "application/json" }];
     const metadataReceipt = await uploader.uploadFile(metadataPath, { tags: metadataTags });
     const metadataUrl = `https://gateway.irys.xyz/${metadataReceipt.id}`;
-    console.log(`✅ Metadata JSON subido con éxito: ${metadataUrl}`);
+    console.log(`✅ Metadata JSON uploaded successfully: ${metadataUrl}`);
 
-    // Generar un log detallado en formato Markdown para registro o estudio
+    // Generate a detailed log in Markdown format for record keeping or study
     const logPath = "./upload-log.md";
-    const logContent = `# Log de Subida de Archivos - Irys (${network.toUpperCase()})
+    const logContent = `# File Upload Log - Irys (${network.toUpperCase()})
 
-Este log registra la subida del contenido educativo utilizando el SDK de Irys.
+This log records the upload of educational content using the Irys SDK.
 
-## Wallet del Creador
-* **Dirección Pública:** \`${address}\`
+## Creator Wallet
+* **Public Address:** \`${address}\`
 
-## Archivos Subidos
-1. **Imagen de Ejemplo:**
-   * **Ruta local:** \`${imagePath}\`
+## Uploaded Files
+1. **Example Image:**
+   * **Local path:** \`${imagePath}\`
    * **Irys Transaction ID:** \`${imageReceipt.id}\`
-   * **Enlace de acceso directo:** [${imageUrl}](${imageUrl})
+   * **Direct link:** [${imageUrl}](${imageUrl})
 
-2. **Metadatos del NFT (JSON):**
-   * **Ruta local:** \`${metadataPath}\`
+2. **NFT Metadata (JSON):**
+   * **Local path:** \`${metadataPath}\`
    * **Irys Transaction ID:** \`${metadataReceipt.id}\`
-   * **Enlace de acceso directo:** [${metadataUrl}](${metadataUrl})
+   * **Direct link:** [${metadataUrl}](${metadataUrl})
 
 ---
-*Fecha de subida: ${new Date().toISOString()}*
+*Upload date: ${new Date().toISOString()}*
 `;
 
     fs.writeFileSync(logPath, logContent, "utf-8");
     console.log(`\n=========================================`);
-    console.log(`🎉 ¡Proceso completado con éxito!`);
-    console.log(`Log generado en: ${logPath}`);
+    console.log(`🎉 Process completed successfully!`);
+    console.log(`Log generated at: ${logPath}`);
     console.log(`=========================================`);
 
     return { imageUrl, metadataUrl };
@@ -198,38 +198,39 @@ const main = async () => {
     try {
         const uploader = await getIrysUploader(network);
         
-        // Consultar balance en Irys antes de subir
+        // Query Irys balance before uploading
         const initialBalance = await uploader.getBalance(keypair.publicKey.toBase58());
         const balanceInSol = uploader.utils.fromAtomic(initialBalance);
-        console.log(`Balance actual en Irys: ${balanceInSol.toString()} SOL`);
+        console.log(`Current Irys balance: ${balanceInSol.toString()} SOL`);
 
-        // Si el balance es cero o casi cero, y estamos en devnet, podemos alertar sobre el fondeo
+        // If balance is zero or near zero, and we are on devnet, alert about funding
         if (initialBalance.isZero()) {
-            console.log("\n⚠️  ¡Tu balance en Irys es 0 SOL!");
-            console.log("Nota: Para subir archivos debes fondear el nodo primero.");
-            console.log("Puedes usar el script para fondear o usar un faucet si estás en Devnet.");
-            console.log("Si deseas fondear automáticamente 0.005 SOL para esta prueba, puedes modificar el código.");
+            console.log("\n⚠️  Your Irys balance is 0 SOL!");
+            console.log("Note: To upload files, you must fund the node first.");
+            console.log("You can use the withdraw/funding scripts or a faucet if you are on Devnet.");
+            console.log("If you want to automatically fund 0.005 SOL for this test, you can modify the code.");
             
-            // Fondeo automático opcional para facilitar las pruebas en devnet
+            // Optional auto-funding to facilitate testing on devnet
             if (network === "devnet") {
-                console.log("\nIntentando autofondear 0.002 SOL en Devnet...");
+                console.log("\nAttempting auto-funding of 0.002 SOL on Devnet...");
                 try {
                     await fundIrys(uploader, 0.002);
                 } catch (fundErr: any) {
-                    console.log("No se pudo fondear automáticamente (asegúrate de que tu wallet Solana tiene saldo Devnet SOL).");
+                    console.log("Could not auto-fund (make sure your Solana wallet has Devnet SOL balance).");
                 }
             }
         }
 
         await uploadAssets(network);
 
-        // Consultar balance final en Irys
+        // Query final Irys balance
         const finalBalance = await uploader.getBalance(keypair.publicKey.toBase58());
-        console.log(`Balance final en Irys: ${uploader.utils.fromAtomic(finalBalance).toString()} SOL`);
+        console.log(`Final Irys balance: ${uploader.utils.fromAtomic(finalBalance).toString()} SOL`);
 
     } catch (e: any) {
-        console.error("❌ Ocurrió un error en el proceso principal:", e.message || e);
+        console.error("❌ An error occurred in the main process:", e.message || e);
     }
 };
 
 main();
+

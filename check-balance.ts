@@ -8,13 +8,13 @@ import bs58 from "bs58";
 dotenv.config();
 
 /**
- * Carga la llave privada desde las variables de entorno o un archivo local.
- * Soporta formato de array JSON [1,2,...] o string Base58.
+ * Loads the private key from environment variables or a local file.
+ * Supports JSON array format [1,2,...] or Base58 string.
  */
 function loadPrivateKey(): Uint8Array {
     let privateKeyStr = (process.env.PRIVATE_KEY || "").trim();
     if (!privateKeyStr) {
-        throw new Error("La variable de entorno PRIVATE_KEY no está configurada.");
+        throw new Error("PRIVATE_KEY environment variable is not configured.");
     }
 
     if (fs.existsSync(privateKeyStr)) {
@@ -35,12 +35,12 @@ function loadPrivateKey(): Uint8Array {
     try {
         return bs58.decode(privateKeyStr);
     } catch (e) {
-        throw new Error(`Error al decodificar PRIVATE_KEY: ${(e as Error).message}`);
+        throw new Error(`Failed to decode PRIVATE_KEY: ${(e as Error).message}`);
     }
 }
 
 const main = async () => {
-    // Leer red del argumento (por defecto devnet)
+    // Read network from command line argument (defaults to devnet)
     const networkArg = (process.argv[2] || "devnet").toLowerCase() as "devnet" | "mainnet";
     const isMainnet = networkArg === "mainnet";
     const network = isMainnet ? "mainnet" : "devnet";
@@ -50,11 +50,11 @@ const main = async () => {
     const address = keypair.publicKey.toBase58();
 
     console.log("=========================================");
-    console.log(`Wallet Solana: ${address}`);
-    console.log(`Red consultada: ${network.toUpperCase()}`);
+    console.log(`Solana Wallet: ${address}`);
+    console.log(`Queried Network: ${network.toUpperCase()}`);
     console.log("=========================================");
 
-    // 1. Obtener balance directamente en la blockchain de Solana
+    // 1. Get balance directly on the Solana blockchain
     const rpcUrl = isMainnet
         ? process.env.SOLANA_MAINNET_RPC || "https://api.mainnet-beta.solana.com"
         : process.env.SOLANA_DEVNET_RPC || clusterApiUrl("devnet");
@@ -62,12 +62,12 @@ const main = async () => {
     const connection = new Connection(rpcUrl, "confirmed");
     try {
         const solBalance = await connection.getBalance(keypair.publicKey);
-        console.log(`Saldo de Wallet en Solana: ${(solBalance / 1e9).toFixed(9)} SOL`);
+        console.log(`Solana Wallet Balance: ${(solBalance / 1e9).toFixed(9)} SOL`);
     } catch (e: any) {
-        console.error("Error al obtener saldo de Solana:", e.message || e);
+        console.error("Error fetching Solana balance:", e.message || e);
     }
 
-    // 2. Obtener balance fondeado en el nodo de Irys
+    // 2. Get funded balance on the Irys node
     try {
         let uploader;
         if (isMainnet) {
@@ -82,11 +82,12 @@ const main = async () => {
         }
         
         const irysBalance = await uploader.getBalance(address);
-        console.log(`Saldo disponible en Irys: ${uploader.utils.fromAtomic(irysBalance).toFixed(9)} SOL (${irysBalance.toString()} unidades atómicas)`);
+        console.log(`Available Irys balance: ${uploader.utils.fromAtomic(irysBalance).toFixed(9)} SOL (${irysBalance.toString()} atomic units)`);
     } catch (e: any) {
-        console.error("Error al conectar con Irys u obtener el saldo:", e.message || e);
+        console.error("Error connecting to Irys or fetching balance:", e.message || e);
     }
     console.log("=========================================");
 };
 
 main();
+

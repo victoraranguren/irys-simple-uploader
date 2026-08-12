@@ -10,7 +10,7 @@ dotenv.config();
 function loadPrivateKey(): Uint8Array {
     let privateKeyStr = (process.env.PRIVATE_KEY || "").trim();
     if (!privateKeyStr) {
-        throw new Error("La variable de entorno PRIVATE_KEY no está configurada.");
+        throw new Error("PRIVATE_KEY environment variable is not configured.");
     }
 
     if (fs.existsSync(privateKeyStr)) {
@@ -31,7 +31,7 @@ function loadPrivateKey(): Uint8Array {
     try {
         return bs58.decode(privateKeyStr);
     } catch (e) {
-        throw new Error(`Error al decodificar PRIVATE_KEY: ${(e as Error).message}`);
+        throw new Error(`Failed to decode PRIVATE_KEY: ${(e as Error).message}`);
     }
 }
 
@@ -40,8 +40,8 @@ const main = async () => {
     const networkArg = process.argv[3] || "devnet";
     
     if (!txId) {
-        console.error("Error: Por favor proporciona el ID/Firma de la transacción de Solana.");
-        console.error("Ejemplo: npm run submit-tx <SOLANA_TX_SIGNATURE> [devnet | mainnet]");
+        console.error("Error: Please provide the Solana transaction ID/Signature.");
+        console.error("Example: npm run submit-tx <SOLANA_TX_SIGNATURE> [devnet | mainnet]");
         process.exit(1);
     }
 
@@ -52,8 +52,8 @@ const main = async () => {
     const keypair = Keypair.fromSecretKey(secretKey);
     const address = keypair.publicKey.toBase58();
 
-    console.log(`Wallet Solana: ${address}`);
-    console.log(`Intentando sincronizar transacción de fondeo manual: ${txId}...`);
+    console.log(`Solana Wallet: ${address}`);
+    console.log(`Attempting to sync manual funding transaction: ${txId}...`);
 
     const rpcUrl = isMainnet
         ? process.env.SOLANA_MAINNET_RPC || "https://api.mainnet-beta.solana.com"
@@ -72,17 +72,18 @@ const main = async () => {
                 .withRpc(rpcUrl);
         }
 
-        // Registrar/enviar la firma de la transacción de Solana al nodo de Irys
+        // Register/submit the Solana transaction signature to the Irys node
         const response = await uploader.funder.submitFundTransaction(txId);
-        console.log("¡Transacción sincronizada con el nodo de Irys con éxito!");
-        console.log("Respuesta de Irys:", response);
+        console.log("Transaction successfully synced with Irys node!");
+        console.log("Irys response:", response);
 
-        // Consultar el balance actualizado
+        // Query updated balance
         const finalBalance = await uploader.getBalance(address);
-        console.log(`Nuevo balance disponible en Irys: ${uploader.utils.fromAtomic(finalBalance).toString()} SOL`);
+        console.log(`New available balance in Irys: ${uploader.utils.fromAtomic(finalBalance).toString()} SOL`);
     } catch (e: any) {
-        console.error("Error al registrar la transacción en Irys:", e.message || e);
+        console.error("Error registering transaction with Irys:", e.message || e);
     }
 };
 
 main();
+

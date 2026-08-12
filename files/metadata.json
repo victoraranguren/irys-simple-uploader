@@ -1,19 +1,19 @@
 {
-  "name": "Colección Educativa Irys",
+  "name": "Irys Educational Collection",
   "symbol": "EDUIRYS",
-  "description": "Este es un NFT de ejemplo creado para el contenido educativo de subidas con Irys y Solana.",
+  "description": "This is an example NFT created for educational content on uploading with Irys and Solana.",
   "image": "https://gateway.irys.xyz/5H38yu5RfPz448JWdYznQJqbtRvzWWS1WKHpZJkjgahT",
   "attributes": [
     {
-      "trait_type": "Clase",
-      "value": "Desarrollo de Software"
+      "trait_type": "Class",
+      "value": "Software Development"
     },
     {
-      "trait_type": "Plataforma",
+      "trait_type": "Platform",
       "value": "Solana + Irys"
     },
     {
-      "trait_type": "Educativo",
+      "trait_type": "Educational",
       "value": "true"
     }
   ],
